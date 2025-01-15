@@ -85,28 +85,32 @@ def play_video(video_path):
             right = current_pos
             right_var.set(f"right ts: {current_pos/1000:.2f}s")
         elif event.keysym == 'Return':
-            save()
+            save_output()
 
-    def save():
-        nonlocal left, right
-        print('ENTERED SAVE with ', left, right)
-        # fix bug where left is negative when it starts at t=0 + convert to seconds
-        t1 = max(0, left) / 1000
-        t2 = right / 1000
+    def save_output():
+        def _save(video_path, left, right, mode):
+            print('ENTERED SAVE with ', left, right)
+            # fix bug where left is negative when it starts at t=0 + convert to seconds
+            t1 = max(0, left) / 1000
+            t2 = right / 1000
 
-        print('CALCULATED t1 and t2 as ', t1, t2)
-        print('condition', t2 > t1)
+            print('CALCULATED t1 and t2 as ', t1, t2)
+            print('condition', t2 > t1)
 
-        if t2 > t1:
-            output_path = f"vids/model/train/{mode}/{find_max_video_number(f'vids/model/train/{mode}') + 1}.mp4"
-            with VideoFileClip(video_path) as video:
-                new = video.subclipped(t1, t2)
-                new.write_videofile(output_path, audio_codec='aac')
-            print(f"Output saved to {output_path}")
-        else:
-            print(
-                f"Invalid timestamps: {left, right}.\n\
-                Press 'd' and 'f' to mark timestamps.")
+            if t2 > t1:
+                output_path = f"vids/model/train/{mode}/{find_max_video_number(f'vids/model/train/{mode}') + 1}.mp4"
+                with VideoFileClip(video_path) as video:
+                    new = video.subclipped(t1, t2)
+                    new.write_videofile(output_path, audio_codec='aac')
+                print(f"Output saved to {output_path}")
+            else:
+                print(
+                    f"Invalid timestamps: {left, right}.\n\
+                        Press 'd' and 'f' to mark timestamps.")
+
+        nonlocal video_path, left, right, mode
+        [v, l, r, m] = [video_path, left, right, mode].copy()
+        threading.Thread(target=_save, args=(v, l, r, m)).start()
 
     def set_frame(new_frame):
         nonlocal cap
@@ -197,7 +201,7 @@ def play_video(video_path):
         root, text="Right (F)", command=lambda: on_key('f'))
     right_button.pack(side=tk.LEFT)
     save_button = tk.Button(
-        root, text="Save (Return)", command=save)
+        root, text="Save (Return)", command=save_output)
     save_button.pack(side=tk.LEFT)
 
     playing = True
@@ -222,7 +226,7 @@ def play_video(video_path):
 if __name__ == "__main__":
     # filename = filedialog.askopenfilename(title="Select Video File", filetypes=[
     #                                       ("Video Files", "*.mp4;*.avi;*.mov;*.M4V")])
-    filename = 'vids/model/train/raw/IMG_4768.M4V'
+    filename = 'vids/model/train/raw/IMG_4775.M4V'
 
     if filename:
         play_video(filename)
